@@ -1,0 +1,63 @@
+# API keys and secrets
+.env
+*.env
+secrets.json
+
+# Model outputs and checkpoints (too large for git)
+outputs/
+data/synthetic/
+*.ckpt
+*.pt
+*.bin
+*.safetensors
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# LaTeX / paper files
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.pdf
+*.sty
+*.bst
+
+# Large data files
+*.json.gz
+*.zip
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Wandb / experiment tracking
+wandb/
+runs/

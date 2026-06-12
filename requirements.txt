@@ -1,0 +1,33 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Core ML / Training
+# ─────────────────────────────────────────────────────────────────────────────
+torch>=2.1.0
+transformers>=4.40.0
+peft>=0.10.0                    # LoRA / QLoRA adapters
+bitsandbytes>=0.43.0            # 4-bit quantization for QLoRA (requires CUDA)
+accelerate>=0.29.0              # device_map="auto" and mixed precision
+datasets>=2.19.0                # HuggingFace datasets (optional, for future use)
+sentencepiece>=0.2.0            # required by some tokenizers (e.g. LLaMA)
+protobuf>=3.20.0                # required by sentencepiece
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Teacher model API clients
+# ─────────────────────────────────────────────────────────────────────────────
+openai>=1.30.0                  # GPT-4o teacher
+anthropic>=0.28.0               # Claude teacher
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Evaluation metrics
+# ─────────────────────────────────────────────────────────────────────────────
+nltk>=3.8.1                     # BLEU-4 (corpus_bleu)
+rouge-score>=0.1.2              # ROUGE-L
+bert-score>=0.3.13              # BERTScore F1
+sentence-transformers>=2.7.0    # Cosine similarity (all-MiniLM-L6-v2)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Data / utilities
+# ─────────────────────────────────────────────────────────────────────────────
+numpy>=1.26.0
+pandas>=2.2.0                   # Optional: for results analysis
+scipy>=1.13.0                   # Optional: statistical tests across generations
+tqdm>=4.66.0                    # Progress bars
