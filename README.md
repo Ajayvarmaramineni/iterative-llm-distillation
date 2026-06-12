@@ -1,10 +1,23 @@
 # Iterative LLM Distillation
 
-> **What happens when a language model trains on its own outputs, generation after generation?**
+**What happens when a language model trains on its own outputs, generation after generation?**
 
-This project studies multi-generation knowledge distillation in large language models. Two independent teacher lineages (GPT-4o and Claude Opus) each generate responses to a shared prompt set. A student model (OPT-1.3B) is fine-tuned on those outputs. Then the student's own outputs become the training data for the next generation. This loop repeats for five generations.
+This project studies multi-generation knowledge distillation in large language models and documents a phenomenon we call **convergent collapse** — the tendency of independently seeded student models to degrade toward the same broken state regardless of their starting teacher.
 
-The result: both lineages collapse to the same degraded state by Generation 5, regardless of which teacher they started from. Vocabulary diversity collapses, repetition climbs, and coherence drops. We call this **convergent collapse**.
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-bfloat16-ee4c2c?logo=pytorch&logoColor=white)
+![Model](https://img.shields.io/badge/Student_Model-OPT--1.3B-blueviolet)
+![Teachers](https://img.shields.io/badge/Teachers-GPT--4o_%7C_Claude_Opus-green)
+![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+
+---
+
+## Overview
+
+Two independent teacher lineages — GPT-4o and Claude Opus — each generate responses to a shared set of 178 prompts spanning question answering, logical reasoning, creative writing, and domain knowledge. A student model (OPT-1.3B, full fine-tuning, bfloat16) is trained on those outputs. The student's own outputs then become the training data for the next generation. This repeats for five generations.
+
+**The finding:** both lineages arrive at the same degraded state by Generation 5. Vocabulary diversity collapses, repetition climbs, semantic coherence drops, and perplexity spikes — all following near-identical trajectories despite starting from completely different teachers. The collapse is not a quirk of one model or one prompt style; it is a structural consequence of iterative self-distillation.
 
 ---
 
@@ -12,37 +25,38 @@ The result: both lineages collapse to the same degraded state by Generation 5, r
 
 ![Headline Results](figures/fig1_headline.png)
 
-*Six quality metrics tracked across five generations for both teacher lineages. All metrics degrade monotonically.*
+Six quality metrics are tracked across all five generations for both teacher lineages. Every metric degrades monotonically. The GPT-4o and Claude lineages, despite starting from different distributions, converge toward the same degraded endpoint by Generation 5. Type-Token Ratio (vocabulary diversity) falls sharply from Generation 1 onward. Repetition rate rises steeply. BLEU-4 and ROUGE-L — which measure how much the outputs still resemble the original Gen-0 teacher responses — both collapse. Perplexity, measured by a frozen GPT-2 reference model, rises, indicating that fluency degrades even though the training loss continues to fall.
 
 ---
 
-## How Collapse Unfolds
+## Generation-by-Generation Breakdown
 
-<table>
-  <tr>
-    <td><img src="figures/fig3_radar.png" alt="Radar Chart" /></td>
-    <td><img src="figures/fig5_heatmap.png" alt="Metric Heatmap" /></td>
-  </tr>
-  <tr>
-    <td align="center"><em>Radar: Gen-0 vs Gen-5 across all metrics</em></td>
-    <td align="center"><em>Heatmap: metric values across all generations</em></td>
-  </tr>
-</table>
+![Radar Chart](figures/fig3_radar.png)
+
+The radar chart above overlays the Gen-0 baseline (outer) against the Gen-5 endpoint (inner) across all six metrics. The area enclosed by the Gen-5 polygon is dramatically smaller, and both lineages occupy nearly the same shrunken region — converging from different starting points to the same failure mode.
 
 ---
 
-## Faithfulness & Category Breakdown
+## Faithfulness Drift and Category-Level Collapse
 
 <table>
   <tr>
-    <td><img src="figures/fig2_faithfulness.png" alt="Faithfulness" /></td>
-    <td><img src="figures/fig4_category_breakdown.png" alt="Category Breakdown" /></td>
-  </tr>
-  <tr>
-    <td align="center"><em>Semantic faithfulness drift from Gen-0 baseline</em></td>
-    <td align="center"><em>Collapse rate by prompt category</em></td>
+    <td width="50%"><img src="figures/fig2_faithfulness.png" alt="Faithfulness" style="width:100%" /></td>
+    <td width="50%"><img src="figures/fig4_category_breakdown.png" alt="Category Breakdown" style="width:100%" /></td>
   </tr>
 </table>
+
+Faithfulness — measured as cosine similarity between each generation's outputs and the Gen-0 baseline — decays steadily across all five generations. By Generation 5, student outputs are semantically distant from the original teacher responses even though they were derived from them through fine-tuning.
+
+Collapse is not uniform across prompt categories. Creative writing degrades fastest, losing structural variety and lexical richness within the first two generations. Logical reasoning degrades more slowly but still converges to the same broken state. Question answering and domain knowledge fall in between.
+
+---
+
+## Metric Heatmap
+
+![Heatmap](figures/fig5_heatmap.png)
+
+This heatmap shows all six metrics across all five generations for both lineages simultaneously. The color gradient makes the directionality of collapse immediately visible: metrics that should stay high (TTR, BLEU-4, ROUGE-L) go cold; metrics that should stay low (repetition rate, perplexity) heat up. The symmetry between the GPT-4o and Claude columns is the core empirical result.
 
 ---
 
@@ -50,7 +64,7 @@ The result: both lineages collapse to the same degraded state by Generation 5, r
 
 ![Collapse Delta](figures/fig6_collapse_delta.png)
 
-*Per-metric percentage change from Gen-0 to Gen-5. GPT-4o and Claude lineages converge to nearly identical degradation.*
+The collapse delta chart shows the percentage change from Gen-0 to Gen-5 for each metric and each lineage. TTR drops by over 60%. Repetition rate more than doubles. The GPT-4o and Claude bars are nearly identical in magnitude across every metric — two teachers, same collapse.
 
 ---
 
@@ -61,10 +75,13 @@ The result: both lineages collapse to the same degraded state by Generation 5, r
 | Student model | OPT-1.3B (`facebook/opt-1.3b`) |
 | Teacher 1 | GPT-4o (OpenAI API) |
 | Teacher 2 | Claude Opus (`claude-opus-4-6`) |
-| Fine-tuning | Full fine-tuning, bfloat16 |
+| Fine-tuning | Full fine-tuning, bfloat16, no GradScaler |
 | Optimizer | AdamW, lr=1e-5, weight decay=0.01 |
-| Epochs | 3 per generation |
-| Generations | 5 (Gen 0 = teacher outputs, Gen 1-5 = student outputs) |
+| Scheduler | Cosine with 5% warmup |
+| Epochs per generation | 3 |
+| Generations | 5 (Gen 0 = teacher outputs, Gen 1–5 = student outputs) |
+| Batch size | 4 (effective 16 with gradient accumulation) |
+| Sequence length | 512 tokens |
 | Prompts | 178 across 4 categories |
 | Metrics | TTR, repetition rate, BLEU-4, ROUGE-L, cosine similarity, perplexity |
 
@@ -90,9 +107,11 @@ iterative-llm-distillation/
 
 ## Quickstart
 
-### 1. Install dependencies
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/Ajayvarmaramineni/iterative-llm-distillation.git
+cd iterative-llm-distillation
 pip install -r requirements.txt
 ```
 
@@ -129,53 +148,52 @@ python src/evaluate_metrics.py --teacher claude --all_generations --max_gen 5
 
 ---
 
-## Metrics
+## Metrics Reference
 
-| Metric | What it measures | Collapse signal |
+| Metric | What it measures | Direction of collapse |
 |---|---|---|
-| TTR | Type-Token Ratio — vocabulary diversity per response | Drops toward 0 |
-| Repetition Rate | Fraction of repeated n-grams within a response | Rises toward 1 |
-| BLEU-4 | N-gram overlap with Gen-0 baseline | Drops |
-| ROUGE-L | Longest common subsequence with Gen-0 baseline | Drops |
-| Cosine Similarity | Intra-generation semantic homogenization | Rises |
-| Perplexity | Fluency under a frozen GPT-2 reference model | Rises |
+| TTR | Type-Token Ratio — vocabulary diversity per response | Decreases |
+| Repetition Rate | Fraction of repeated n-grams within a response | Increases |
+| BLEU-4 | N-gram overlap with Gen-0 baseline | Decreases |
+| ROUGE-L | Longest common subsequence with Gen-0 baseline | Decreases |
+| Cosine Similarity | Intra-generation semantic homogenization | Increases |
+| Perplexity | Fluency under a frozen GPT-2 reference model | Increases |
 
 ---
 
 ## Prompt Categories
 
-| Category | Count |
-|---|---|
-| Question answering | ~45 |
-| Logical reasoning | ~45 |
-| Creative writing | ~44 |
-| Domain knowledge | ~44 |
-| **Total** | **178** |
+| Category | Count | Notes |
+|---|---|---|
+| Question answering | ~45 | Factual, single-answer style |
+| Logical reasoning | ~45 | Multi-step deductive problems |
+| Creative writing | ~44 | Open-ended generation tasks |
+| Domain knowledge | ~44 | Technical and specialized topics |
+| **Total** | **178** | |
 
 ---
 
-## Requirements
+## Limitations
 
-- Python 3.9+
-- CUDA GPU recommended (CPU works but training is slow)
-- OpenAI API key (for GPT-4o teacher)
-- Anthropic API key (for Claude teacher)
+This study was run with limited compute on consumer hardware. Key constraints to be aware of:
 
----
-
-## Known Limitations
-
-This study was run with limited compute on a personal machine. Notable constraints:
-
-- Single student architecture (OPT-1.3B only)
-- Single run per generation — no random seed variance
-- 178 prompts is a relatively small evaluation set
-- No human evaluation of output quality
-- No mitigation experiments (e.g. data mixing, regularization)
-- Closed-source teachers only; open-source teacher lineages not tested
+- **Single student architecture.** Only OPT-1.3B was tested. Results may differ with larger models, decoder-only models of different families, or encoder-decoder architectures.
+- **No seed variance.** Each generation was run once. Without multiple seeds it is not possible to separate systematic collapse from variance in the training process.
+- **Small prompt set.** 178 prompts is sufficient to observe the trend but not to make strong claims about specific prompt types or domains.
+- **No human evaluation.** All metrics are automatic. Human judgement on output quality was not collected.
+- **No mitigation experiments.** The study documents collapse but does not test whether data mixing, regularization, or replay buffers can prevent it.
+- **Closed-source teachers only.** Open-source teacher lineages (Llama, Mistral, etc.) were not tested.
 
 ---
 
-## Contact
+## Contributing
 
-Ajay Ramineni — aramineni@wpi.edu
+Contributions are welcome. If you want to extend this work — try a different student architecture, add open-source teacher lineages, implement a mitigation experiment, or improve the metrics — open a pull request or file an issue.
+
+If you replicate this experiment with different models or settings and get different results, that is especially interesting. Please open an issue with your setup and findings.
+
+---
+
+## License
+
+MIT
