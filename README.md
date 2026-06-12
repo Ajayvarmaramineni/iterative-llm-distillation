@@ -2,7 +2,7 @@
 
 **What happens when a language model trains on its own outputs, generation after generation?**
 
-This project studies multi-generation knowledge distillation in large language models and documents a phenomenon we call **convergent collapse** — the tendency of independently seeded student models to degrade toward the same broken state regardless of their starting teacher.
+This project studies multi-generation knowledge distillation in large language models and documents a phenomenon we call **convergent collapse**: the tendency of independently seeded student models to degrade toward the same broken state regardless of their starting teacher.
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-bfloat16-ee4c2c?logo=pytorch&logoColor=white)
@@ -15,9 +15,9 @@ This project studies multi-generation knowledge distillation in large language m
 
 ## Overview
 
-Two independent teacher lineages — GPT-4o and Claude Opus — each generate responses to a shared set of 178 prompts spanning question answering, logical reasoning, creative writing, and domain knowledge. A student model (OPT-1.3B, full fine-tuning, bfloat16) is trained on those outputs. The student's own outputs then become the training data for the next generation. This repeats for five generations.
+Two independent teacher lineages (GPT-4o and Claude Opus) each generate responses to a shared set of 178 prompts spanning question answering, logical reasoning, creative writing, and domain knowledge. A student model (OPT-1.3B, full fine-tuning, bfloat16) is trained on those outputs. The student's own outputs then become the training data for the next generation. This repeats for five generations.
 
-**The finding:** both lineages arrive at the same degraded state by Generation 5. Vocabulary diversity collapses, repetition climbs, semantic coherence drops, and perplexity spikes — all following near-identical trajectories despite starting from completely different teachers. The collapse is not a quirk of one model or one prompt style; it is a structural consequence of iterative self-distillation.
+**The finding:** both lineages arrive at the same degraded state by Generation 5. Vocabulary diversity collapses, repetition climbs, semantic coherence drops, and perplexity spikes, all following near-identical trajectories despite starting from completely different teachers. The collapse is not a quirk of one model or one prompt style; it is a structural consequence of iterative self-distillation.
 
 ---
 
@@ -25,7 +25,7 @@ Two independent teacher lineages — GPT-4o and Claude Opus — each generate re
 
 ![Headline Results](figures/fig1_headline.png)
 
-Six quality metrics are tracked across all five generations for both teacher lineages. Every metric degrades monotonically. The GPT-4o and Claude lineages, despite starting from different distributions, converge toward the same degraded endpoint by Generation 5. Type-Token Ratio (vocabulary diversity) falls sharply from Generation 1 onward. Repetition rate rises steeply. BLEU-4 and ROUGE-L — which measure how much the outputs still resemble the original Gen-0 teacher responses — both collapse. Perplexity, measured by a frozen GPT-2 reference model, rises, indicating that fluency degrades even though the training loss continues to fall.
+Six quality metrics are tracked across all five generations for both teacher lineages. Every metric degrades monotonically. The GPT-4o and Claude lineages, despite starting from different distributions, converge toward the same degraded endpoint by Generation 5. Type-Token Ratio (vocabulary diversity) falls sharply from Generation 1 onward. Repetition rate rises steeply. BLEU-4 and ROUGE-L (which measure how much the outputs still resemble the original Gen-0 teacher responses) both collapse. Perplexity, measured by a frozen GPT-2 reference model, rises, indicating that fluency degrades even though the training loss continues to fall.
 
 ---
 
@@ -33,7 +33,7 @@ Six quality metrics are tracked across all five generations for both teacher lin
 
 ![Radar Chart](figures/fig3_radar.png)
 
-The radar chart above overlays the Gen-0 baseline (outer) against the Gen-5 endpoint (inner) across all six metrics. The area enclosed by the Gen-5 polygon is dramatically smaller, and both lineages occupy nearly the same shrunken region — converging from different starting points to the same failure mode.
+The radar chart above overlays the Gen-0 baseline (outer) against the Gen-5 endpoint (inner) across all six metrics. The area enclosed by the Gen-5 polygon is dramatically smaller, and both lineages occupy nearly the same shrunken region, converging from different starting points to the same failure mode.
 
 ---
 
@@ -46,7 +46,7 @@ The radar chart above overlays the Gen-0 baseline (outer) against the Gen-5 endp
   </tr>
 </table>
 
-Faithfulness — measured as cosine similarity between each generation's outputs and the Gen-0 baseline — decays steadily across all five generations. By Generation 5, student outputs are semantically distant from the original teacher responses even though they were derived from them through fine-tuning.
+Faithfulness (measured as cosine similarity between each generation's outputs and the Gen-0 baseline) decays steadily across all five generations. By Generation 5, student outputs are semantically distant from the original teacher responses even though they were derived from them through fine-tuning.
 
 Collapse is not uniform across prompt categories. Creative writing degrades fastest, losing structural variety and lexical richness within the first two generations. Logical reasoning degrades more slowly but still converges to the same broken state. Question answering and domain knowledge fall in between.
 
@@ -64,7 +64,7 @@ This heatmap shows all six metrics across all five generations for both lineages
 
 ![Collapse Delta](figures/fig6_collapse_delta.png)
 
-The collapse delta chart shows the percentage change from Gen-0 to Gen-5 for each metric and each lineage. TTR drops by over 60%. Repetition rate more than doubles. The GPT-4o and Claude bars are nearly identical in magnitude across every metric — two teachers, same collapse.
+The collapse delta chart shows the percentage change from Gen-0 to Gen-5 for each metric and each lineage. TTR drops by over 60%. Repetition rate more than doubles. The GPT-4o and Claude bars are nearly identical in magnitude across every metric. Two teachers, same collapse.
 
 ---
 
@@ -79,7 +79,7 @@ The collapse delta chart shows the percentage change from Gen-0 to Gen-5 for eac
 | Optimizer | AdamW, lr=1e-5, weight decay=0.01 |
 | Scheduler | Cosine with 5% warmup |
 | Epochs per generation | 3 |
-| Generations | 5 (Gen 0 = teacher outputs, Gen 1–5 = student outputs) |
+| Generations | 5 (Gen 0 = teacher outputs, Gen 1 to 5 = student outputs) |
 | Batch size | 4 (effective 16 with gradient accumulation) |
 | Sequence length | 512 tokens |
 | Prompts | 178 across 4 categories |
@@ -152,7 +152,7 @@ python src/evaluate_metrics.py --teacher claude --all_generations --max_gen 5
 
 | Metric | What it measures | Direction of collapse |
 |---|---|---|
-| TTR | Type-Token Ratio — vocabulary diversity per response | Decreases |
+| TTR | Type-Token Ratio (vocabulary diversity per response) | Decreases |
 | Repetition Rate | Fraction of repeated n-grams within a response | Increases |
 | BLEU-4 | N-gram overlap with Gen-0 baseline | Decreases |
 | ROUGE-L | Longest common subsequence with Gen-0 baseline | Decreases |
@@ -188,7 +188,7 @@ This study was run with limited compute on consumer hardware. Key constraints to
 
 ## Contributing
 
-Contributions are welcome. If you want to extend this work — try a different student architecture, add open-source teacher lineages, implement a mitigation experiment, or improve the metrics — open a pull request or file an issue.
+Contributions are welcome. If you want to extend this work by trying a different student architecture, adding open-source teacher lineages, implementing a mitigation experiment, or improving the metrics, open a pull request or file an issue.
 
 If you replicate this experiment with different models or settings and get different results, that is especially interesting. Please open an issue with your setup and findings.
 
